@@ -1,0 +1,301 @@
+<!doctype html>
+
+<head>
+<title>Admin Panel</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	    <!-- Latest compiled and minified CSS -->
+	    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css"> -->
+
+	    <!-- Optional theme -->
+	    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css"> -->
+
+	    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+	    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script> -->
+
+	    <!-- Latest compiled and minified JavaScript -->
+	    <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script> -->
+
+	    <link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/style.css') }}">
+	    <meta name="viewport" content="width=device-width, initial-scale=1">
+  		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+	<script>
+		$( document ).ready(function() {
+	    	console.log( "ready!" );
+
+	    	$("input[name='team']").change(function(){
+			    console.log("Changed in outer function....");
+			    //showMembersForTeam();
+			});
+	  	});
+
+	  	function sendBotMessage() {
+	    	var message_text = document.getElementById("user_custom_message").value;
+	    	console.log("Trying to send a bot message:"+message_text);
+
+	    	var request = $.ajax({
+	        	url: "/sendBotMessage",
+	        	type: "GET",
+	        	data: {text: message_text},
+	        	dataType: "html",
+	        	async: true, 
+	        	success : function (msg)
+	        	{
+	          		console.log( "Sending bot messages a success! ("+message_text+")" );
+	          		//location.reload();
+	        	}
+	      	});
+	  	}
+
+	  	function showMembersForTeam() {
+		  	console.log("Changed in inner function....");
+		  	team_id = $('input[name=team]:checked', '').val();
+		  	console.log("Selected team: " + team_id);
+
+		  	var request = $.ajax({
+		        url: "/getSlackTeamMembers",
+		        type: "GET",
+		        data: {team_id: team_id},
+		        dataType: "html",
+		        async: true, 
+		        success : function (msg)
+		        {
+		          	console.log( "Getting the members of the team a success! ("+msg+")" );
+		          	var members_html = msg;
+
+		          	console.log("Members inner html: " + members_html);
+
+		  			member_div = document.getElementById("team_members");
+		  			member_div.innerHTML = members_html;
+		        }
+		    });
+		}
+
+		function addToStudy(slack_id, team_id, name) {
+	    	console.log("Adding study participant, Slack_id: "+slack_id+", Team_id: "+team_id+", Name: "+name);
+
+	    	var request = $.ajax({
+	        	url: "/addStudyParticipant",
+	        	type: "GET",
+	        	data: {slack_id: slack_id, team_id: team_id, name: name},
+	        	dataType: "html",
+	        	async: true, 
+	        	success : function (msg)
+	        	{
+	          		console.log( "Adding participant a success! ("+slack_id+")" );
+	          		location.reload();
+	        	}
+	      	});
+	  	}
+
+	  	function assignParticipantToSurvey(survey_id) {
+	    	console.log("Assigning selected participant to survey: " + survey_id);
+	    	participant_id = $('input[name=participant]:checked', '').val();
+
+	    	var request = $.ajax({
+	        	url: "/assignParticipantToSurvey",
+	        	type: "GET",
+	        	data: {user_id: participant_id, survey_id: survey_id},
+	        	dataType: "html",
+	        	async: true, 
+	        	success : function (msg)
+	        	{
+	          		console.log( "Adding participant to a survey! ("+survey_id+", "+participant_id+")" );
+	          		location.reload();
+	        	}
+	      	});
+	  	}
+
+	  	function sendSurveyToParticipant(survey_id) {
+	    	console.log("Send selected survey to the participant: " + survey_id);
+	    	participant_id = $('input[name=participant]:checked', '').val();
+
+	    	var request = $.ajax({
+	        	url: "/sendSurveyToParticipant",
+	        	type: "GET",
+	        	data: {user_id: participant_id, survey_id: survey_id},
+	        	dataType: "html",
+	        	async: true, 
+	        	success : function (msg)
+	        	{
+	          		console.log( "Sending survey to participant! ("+survey_id+", "+participant_id+")" );
+	          		//location.reload();
+	        	}
+	      	});
+	  	}
+
+	  	function sendDirectMessage(slack_id, team_id, name) {
+	    	console.log("Sending a direct message to slack user, Slack_id: "+slack_id+", Team_id: "+team_id+", Name: "+name);
+
+	    	var text = prompt("Please enter the message to be sent to "+name+":", "Hello "+name);
+		    if (text == null || text == "") {
+		        alert("Sending message cancelled!");
+		    } else {
+		        var request = $.ajax({
+		        	url: "/sendBotMessage",
+		        	type: "GET",
+		        	data: {user_id: slack_id, team_id: team_id, text: text},
+		        	dataType: "html",
+		        	async: true, 
+		        	success : function (msg)
+		        	{
+		          		console.log( "Sending direct message success! ("+slack_id+")" );
+		          		//location.reload();
+		        	}
+		      	});
+		    }
+	  	}
+
+
+	</script>
+</head>
+<body>
+<center>
+	<h1>Participants enrolled in study</h1>
+	<table>
+		<tr>
+			<th>#</th>
+			<th>Time added</th>
+			<th>Team ID</th>
+			<th>Slack ID</th>
+			<th>Name</th>
+			<th>Timezone</th>
+			<th>Email</th>
+			<th>Phone</th>
+			<th>Device ID</th>
+		</tr>
+	{% for x in study_participants %}
+		<tr>
+			<td><input type="radio" name="participant" value="{{ x.id }}">{{ loop.index }}</td>
+			<td>{{ x.time_added }}</td>
+			<td>{{ x.team_id }}</td>
+			<td>{{ x.slack_id }}</td>
+			<td>{{ x.name }}</td>
+			<td>{{ x.timezone }}</td>
+			<td>{{ x.email }}</td>
+			<td>{{ x.phone }}</td>
+			<td>{{ x.device_id }}</td>
+		</tr>
+    {% endfor %}
+    </table>
+    <br />
+
+    <h1>Defined surveys</h1>
+	<table>
+		<tr>
+			<th>#</th>
+			<th>Name</th>
+			<th>Questions</th>
+			<th>Schedule</th>
+			<th>Current participant assignments</th>
+			<th>Assign participant</th>
+			<th></th>
+		</tr>
+	{% for x in survey_schemas %}
+		<tr>
+			<td><input type="radio" name="survey" value="{{ x.id }}">{{ x.id }}</td>
+			<td>{{ x.name }}</td>
+			<td style='text-align: left'>
+				<ul>
+					{% for y in survey_questions %}
+						{% if y.survey_id==x.id %}
+							<li> {{ y.id }}. {{ y.text }}</li>
+						{% endif %}
+					{% endfor %}
+				</ul>
+			</td>
+			<td style='text-align: left'>
+				<ul>
+					{% for y in survey_schedules %}
+						{% if y.survey_id==x.id %}
+							{% set weekday_text = "None" %}
+							
+							{% set weekday_text = "Monday" if y.week_day == 0 %}
+							{% set weekday_text = "Tuesday" if y.week_day == 1 %}
+
+							<li> {{ y.id }}. {{ y.week_day | replace("0","Monday") | replace("1","Tuesday") | replace("2","Wednesday") | replace("3","Thursday") | replace("4","Friday") | replace("5", "Saturday") | replace("6", "Sunday")}}, {{ y.hour }}:{{ y.minute | replace("0", "00") }}</li>
+						{% endif %}
+					{% endfor %}
+				</ul>
+			</td>
+			<td>
+				<ul>
+					{% for y in participant_survey_assignment %}
+						{% if y.survey_id==x.id %}
+							{% for z in study_participants %}
+								{% if z.id==y.user_id %}
+									<li> {{ y.user_id }} - {{ z.name }}</li>
+								{% endif %}
+							{% endfor %}
+						{% endif %}
+					{% endfor %}
+				</ul>
+			</td>
+			<td>
+				<button type="button" onclick="return assignParticipantToSurvey('{{ x.id }}');">Assign participant <br /> to survey</button>
+			</td>
+			<td>
+				<button type="button" onclick="return sendSurveyToParticipant('{{ x.id }}');">Send survey <br />to participant</button>
+			</td>
+		</tr>
+    {% endfor %}
+    </table>
+
+    <br />
+    <hr />
+    <br />
+	<h1>Teams that approved access</h1>
+	<table>
+		<tr>
+			<th>#</th>
+			<th>Time</th>
+			<th>Team ID</th>
+			<th>Access token</th>
+		</tr>
+	{% for x in team_approvals %}
+		<tr>
+			<td><input type="radio" name="team" value="{{ x.id }}"></td>
+			<td>{{ x.timestamp }}</td>
+			<td>{{ x.id }}</td>
+			<td>{{ x.authorization_token }}</td>
+		</tr>
+    {% endfor %}
+    </table>
+    <div id="team-navigation">
+    	<button type="button" onclick="return showMembersForTeam();">Show team members</button>
+    </div> 
+
+    <div id="team_members">
+    </div>
+    
+    <h1>Messages from users on slack</h1>
+	<table>
+		<tr>
+			<th>Time</th>
+			<th>User ID</th>
+			<th>Survey ID</th>
+			<th>Queston ID</th>
+			<th>Type</th>
+			<th>Text</th>
+		</tr>
+	{% for x in survey_question_log %}
+		<tr>
+			<td>{{ x.timestamp }}</td>
+			<td>{{ x.user_id }}</td>
+			<td>{{ x.survey_id }}</td>
+			<td>{{ x.question_id }}</td>
+			<td>{{ x.question_type }}</td>
+			<td>{{ x.text }}</td>
+		</tr>
+    {% endfor %}
+    </table>
+
+    <!-- <h1>Send bot message</h1>
+    <textarea id="user_custom_message" rows="4" cols="50"></textarea><br/>
+    <button type="button" onclick="return sendBotMessage();">Make bot send message</button> -->
+
+</center>
+</body>

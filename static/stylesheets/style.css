@@ -1,0 +1,15 @@
+table {
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid black;
+}
+
+table th {
+	background-color: #EEEEEE;
+}
+
+table.borderless > td {
+    border: 0px solid black;
+}

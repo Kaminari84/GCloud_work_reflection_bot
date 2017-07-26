@@ -1,0 +1,19 @@
+<!doctype html>
+<h1>Team {{team_id}} members</h1>
+<table>
+	<tr><th>#</th><th>ID</th><th>Team ID</th><th>Name</th><th></th><th></th></tr>
+{% for x in team_members %}
+	<tr>
+		<td>{{ loop.index }}</td>
+		<td>{{ x.id }}</td>
+		<td>{{ x.team_id }}</td>
+		<td>{{ x.name }}</td>
+		<td>
+			<button type="button" onclick="return addToStudy( '{{ x.id }}', '{{ x.team_id }}', '{{ x.name }}' );">Add to study</button>
+		</td>
+		<td>
+			<button type="button" onclick="return sendDirectMessage( '{{ x.id }}', '{{ x.team_id }}', '{{ x.name }}' );">Send Direct Message</button>
+		</td>
+	</tr>
+{% endfor %}
+</table>
