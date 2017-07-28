@@ -13,5 +13,6 @@ env_variables:
   # when configuring your Cloud SQL instance.
   SQLALCHEMY_DATABASE_URI: >-
     mysql+pymysql://root:Fukuzatsu@/bot_db?unix_socket=/cloudsql/bot-test-174121:us-central1:bot-cloud-sql
+  USER_RESPONSE_STYLE: TILL_DONE
 beta_settings:
     cloud_sql_instances: bot-test-174121:us-central1:bot-cloud-sql

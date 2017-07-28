@@ -13,56 +13,24 @@ import os
 from flask import Flask, request, make_response, render_template
 from flask_sqlalchemy import SQLAlchemy
 import sqlalchemy
-from dataMgr import DataMgr
+#from dataMgr import DataMgr
+import dataMgr
 from dataMgr import app
 from dataMgr import db
+from dataMgr import TeamApproval
+from dataMgr import SurveyQuestionLog
+from dataMgr import SurveyQuestion
+from dataMgr import Survey
+from dataMgr import SurveySchedule
+from dataMgr import ParticipantSurveyAssignment
+
 from dataMgr import team_bots
 from bot import Bot
+from enum import Enum
 
 logging.basicConfig(level=logging.INFO)
 
-
-class SurveyQuestion(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    survey_id = db.Column(db.Integer, db.ForeignKey('survey.id'), nullable=False)
-    text = db.Column(db.String(256))
-
-    def __init__(self, id, survey_id, text):
-        self.id = id
-        self.survey_id = survey_id
-        self.text = text
-
-class Survey(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128))
-    questions = db.relationship('SurveyQuestion', backref='survey', lazy=True)
-
-    def __init__(self, id, name):
-        self.id = id
-        self.name = name
-
-class SurveySchedule(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    survey_id = db.Column(db.Integer)
-    week_day = db.Column(db.Integer)
-    hour = db.Column(db.Integer)
-    minute = db.Column(db.Integer)
-
-    def __init__(self, id, survey_id, week_day, hour, minute):
-        self.id = id
-        self.survey_id = survey_id
-        self.week_day = week_day
-        self.hour = hour
-        self.minute = minute
-
-class ParticipantSurveyAssignment(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    survey_id = db.Column(db.Integer)
-    user_id = db.Column(db.String(80))
-
-    def __init__(self, survey_id, user_id):
-        self.survey_id = survey_id
-        self.user_id = user_id
+USER_RESPONSE_STYLE = os.environ['USER_RESPONSE_STYLE'] #TILL_DONE $ONE_ANSWER
 
 class Participant(db.Model):
     id = db.Column(db.String(80), primary_key=True)
@@ -74,10 +42,7 @@ class Participant(db.Model):
     phone = db.Column(db.String(80))
     device_id = db.Column(db.String(256))
     time_added = db.Column(db.DateTime())
-
-
-    #fields outside of DB
-    bot_reference = None
+    state = db.Column(db.String(50))
 
     def __init__(self, team_id, slack_id, name, timezone = None, email = None, phone = None, device_id = None):
         self.id = team_id+"_"+slack_id
@@ -89,8 +54,9 @@ class Participant(db.Model):
         self.phone = phone
         self.device_id = device_id
         self.time_added = datetime.datetime.utcnow()
+        self.state = "DAY_START"
 
-    def set_timezone(sefl, timezone):
+    def set_timezone(self, timezone):
         self.timezone = timezone
 
     def set_email(self, email):
@@ -105,25 +71,54 @@ class Participant(db.Model):
     def set_name(self, name):
         self.name = name
 
-    def set_bot_reference(self, bot_reference):
-        self.bot_reference = bot_reference
+    def get_bot_reference(self):
+        return get_bot_for_participant(self.id)
+
+    def send_dm_message(self, text):
+        bot_reference = self.get_bot_reference()
+
+        if bot_reference:
+            logging.info("Bot reference for user is OK")
+            dm_channel = bot_reference.open_dm(self.slack_id)
+            bot_reference.post_message(dm_channel, text)
+
+            return True
+        else:
+            logging.warning("Bot reference missing for user id: "+self.id+", name: "+self.name)
+            return False
+
 
     def send_survey(self, survey):
-        logging.info("Trying to send survey to participant: "+str(self.id)+", survey id: "+str(survey.id)+", name: "+survey.name)
+        logging.info("Trying to send survey to participant ("+str(self.id)+", name: "+self.name+"), survey id: "+str(survey.id)+", name: "+survey.name)
         #get the survey questions
         survey_question = SurveyQuestion.query.filter_by(survey_id=survey.id).order_by(sqlalchemy.asc(SurveyQuestion.id)).first()
         if survey_question:
             logging.info("First question is: "+survey_question.text)
 
-            if bot_reference:
-                logging.info("Bot reference for user is OK")
-                dm_channel = bot_reference.open_dm(self.slack_id)
-                bot_reference.post_message(dm_channel, survey_question.text)
+            nextState = "SURVEY_QUESTION_ASKED#"+str(survey.id)+"$"+str(survey_question.id)
+            status = {  "stateChanged": True,
+                "prevState": "DAY_START",
+                "nextState": nextState
+            }
 
+            self.update(status = status)
+
+            #send_survey_question(survey.id, survey_question.id)
+        else:
+            logging.warning("Survey has no questions!")
+
+    def send_survey_question(self, survey_id, question_id):
+        logging.info("Trying to send survey question to participant ("+str(self.id)+", name: "+self.name+"), survey id: "+str(survey_id)+", q_id:"+str(question_id))
+        #get the survey questions
+        survey_question = SurveyQuestion.query.filter_by(survey_id=survey_id, id=question_id).first()
+        if survey_question:
+            logging.info("First question is: "+survey_question.text)
+
+            if self.send_dm_message(survey_question.text):
                 #log that we sent the message
                 surveyQuestionLog = SurveyQuestionLog(
                                         user_id=self.id,
-                                        survey_id=survey.id,
+                                        survey_id=survey_id,
                                         question_id=survey_question.id,
                                         question_type="SURVEY",
                                         text=survey_question.text)
@@ -134,10 +129,49 @@ class Participant(db.Model):
             else:
                 logging.warning("Trying to send survey and user has no bot_reference!!!")
         else:
-            logging.warning("Survey has no questions!")
+            logging.warning("The survey id:"+survey_id+" question id:"+question_id+" does not exist when trying to send it!")
+
+    def send_end_survey_message(self, survey_id):
+        message_text = "Thanks for completing your activity report!"
+
+        if self.send_dm_message(message_text):
+            #log that we sent the message
+            surveyQuestionLog = SurveyQuestionLog(
+                                    user_id=self.id,
+                                    survey_id=survey_id,
+                                    question_id=None,
+                                    question_type="SURVEY_COMPLETED",
+                                    text=message_text)
+
+            logging.info("Logging survey question sent to DB...")
+            db.session.add(surveyQuestionLog)
+            db.session.commit()
+        else:
+            logging.warning("Trying to send survey and user has no bot_reference!!!")
+
+    def send_start_survey_message(self):
+        message_text = "Hey, it is time for your activity report today!"
+
+        if self.send_dm_message(message_text):
+            #log that we sent the message
+            surveyQuestionLog = SurveyQuestionLog(
+                                    user_id=self.id,
+                                    survey_id=None,
+                                    question_id=None,
+                                    question_type="SURVEY_STARTED",
+                                    text=message_text)
+
+            logging.info("Logging survey question sent to DB...")
+            db.session.add(surveyQuestionLog)
+            db.session.commit()
+        else:
+            logging.warning("Trying to send survey and user has no bot_reference!!!")
+    
 
     def handle_message(self, channel, text):
         logging.info("Handling message from user: "+text)
+
+        #logging.info("Gettinf the latest question that has been asked")
 
         #log that we sent the message
         surveyQuestionLog = SurveyQuestionLog(
@@ -155,44 +189,288 @@ class Participant(db.Model):
         logging.info("Determining user "+self.id+" state...")
         #SurveyQuestionLog.query.filter_by(user_id=self.id, timestamp).first())     
 
+    def update(self, status = None):
+        logging.info("---------------------USER UPDATE-----------------------")
+        logging.info("Updating user: "+self.id+", current state: "+self.state)
+
+        logging.info("Checking state transition...")
+        if not status:
+            status = {  "stateChanged": False,
+                    "prevState": self.state,
+                    "nextState": self.state
+                    }
+
+            status = Participant.transition_state(self.state, self.id)
+        else:
+            logging.info("Received the status as argument!")
     
+        if status['stateChanged']:
+            logging.info("State change request from "+status['prevState']+" to "+status['nextState'])
+            self.state = status['nextState']
 
-    def update(self):
-        logging.info("Updating user: "+self.id+" ...")
+            logging.info("Executing exit "+status['prevState']+" state function")
+            Participant.exit_state(status['prevState'], self.id)
+            
+            logging.info("Executing enter "+status['nextState']+" state function")
+            Participant.enter_state(status['nextState'], self.id)
+        else:
+            logging.info("State has not changed!")
+            logging.info("Executing in state "+status['prevState']+" function")
+            Participant.in_state(status['prevState'], self.id)
+
+        logging.info("Update complete for participant: "+self.id+", current state: "+self.state)
+
+    @staticmethod
+    def transition_state(state, user_id):
+        now = datetime.datetime.now()
+        logging.info("The time now is: "+now.isoformat(' '))
+
+        end_day_time = datetime.datetime(now.year, now.month, now.day, 23, 30)
+        logging.info("End day time is: "+end_day_time.isoformat(' '))
+
+        status = {  "stateChanged": False,
+                    "prevState": state,
+                    "nextState": state 
+                }
+
+        today_week_day = now.weekday()
+        hour_now = now.hour
+        minute_now = now.minute
+        today_minute_count = hour_now*60+minute_now
+
+        logging.info("Week day: "+str(today_week_day)+", hour: "+str(hour_now)+", minute: "+str(minute_now)+", minute_count:"+str(today_minute_count))
+
+        if state == "DAY_START":
+            logging.info("The day has just started")
+            #get the assigned survey time
+            pas_assignments = ParticipantSurveyAssignment.query.filter_by(user_id=user_id).limit(10)
+            for pas in pas_assignments:
+                logging.info("There is survey assignment, get the survey id: "+str(pas.survey_id))
+                survey = Survey.query.filter_by(id=pas.survey_id).first()
+                if survey:
+                    logging.info("Found a survey: "+str(survey.id)+", name:"+survey.name+"!")
+                    logging.info("Checking it's schedule")
+                    survey_schedule = SurveySchedule.query.filter_by(survey_id=survey.id).limit(10)
+                    #just find the first time that matches
+                    se = 1
+                    run_survey = False
+                    for schedule_entry in survey_schedule:
+                        schedule_minute_count = schedule_entry.hour*60+schedule_entry.minute
+                        logging.info("Schedule entry ["+str(se)+"] -> week_day: "+str(schedule_entry.week_day)+", hour: "+str(schedule_entry.hour)+", minute:"+str(schedule_entry.minute)+", minute_count:"+str(schedule_minute_count))
+                        if schedule_entry.week_day == today_week_day:
+                            if today_minute_count > schedule_minute_count:
+                                logging.info("This schedule works for now!")
+                                run_survey = True
+
+                    if run_survey:
+                        logging.info("OK, seems we are running the survey!")
+                        sq = SurveyQuestion.query.filter_by(survey_id=survey.id).order_by(sqlalchemy.asc(SurveyQuestion.id)).first()
+                        if sq:
+                            logging.info("First question id: "+str(sq.id)+" is: "+sq.text)
+                            
+                            nextState = "SURVEY_QUESTION_ASKED#"+str(survey.id)+"$"+str(sq.id)
+                            logging.info("Changing state to "+nextState)
+                            status['stateChanged'] = True
+                            status['nextState'] = nextState
+                            break
+                        else:
+                            logging.warning("Empty survey? survey_id:"+survey.id)
+                else:
+                    logging.warning("No survey object for survey assignment! survey_ass_id: "+str(pas.id)+", survey id:"+str(pas.survey_id))
+
+            if now > end_day_time:
+                logging.info("Changing state to END_DAY")
+                status['stateChanged'] = True
+                status['nextState'] = "END_DAY"
+            else:
+                logging.warning("No surveys assigned to the participant id: "+user_id)
+                logging.info("Waiting for end of day")
+
+        elif state.startswith("SURVEY_QUESTION_ASKED"):
+            logging.info("We are in survey question asking state")
+            #determine survey id and question id
+            ids = Participant.extract_ids_from_survey_question_state(state)
+            if "survey_id" in ids and "question_id" in ids:
+                survey_id = ids['survey_id']
+                question_id = ids['question_id']
+
+                logging.info("Determine if the question has been answered")
+                #Get when the survey id, question id has been asked the last time for this user
+                sql_question = SurveyQuestionLog.query.filter_by(user_id=user_id, survey_id=survey_id, question_id=question_id).order_by(sqlalchemy.desc(SurveyQuestionLog.timestamp)).first()
+                if sql_question:
+                    logging.info("Found the matching questions asked at: "+sql_question.timestamp.isoformat(' ')+", probably should check if the same day, but we are not doing it now")
+                    logging.info("Now get all the answers from this user afterwards...")
+
+                    qtime = datetime.datetime(sql_question.timestamp.year, sql_question.timestamp.month, sql_question.timestamp.day, sql_question.timestamp.hour, sql_question.timestamp.minute, sql_question.timestamp.second)
+                    logging.info("Cut off date from question: " + qtime.isoformat(' '))
+
+                    sql_answers = SurveyQuestionLog.query.filter(SurveyQuestionLog.timestamp>qtime).filter_by(user_id=user_id, question_type="USER_MESSAGE").order_by(sqlalchemy.desc(SurveyQuestionLog.timestamp)).limit(20)
+                    if sql_answers:
+                        logging.info("Got "+str(sql_answers.count())+" answers...")
+                        n = 1
+                        for ans in sql_answers:
+                            logging.info("Got answer ["+str(n)+"]: "+ans.text)
+                            n=n+1
+
+                        if Participant.is_answering_finished(sql_answers, USER_RESPONSE_STYLE): #TILL_DONE $ONE_ANSWER
+                            logging.info("Answering done, move to next question")
+                            
+                            survey_question = SurveyQuestion.query.filter_by(survey_id=survey_id).filter(SurveyQuestion.id>question_id).order_by(sqlalchemy.asc(SurveyQuestion.id)).first()
+                            if survey_question:
+                                nextState = "SURVEY_QUESTION_ASKED#"+str(survey_question.survey_id)+"$"+str(survey_question.id)
+                                logging.info("Found next question, changing state to "+nextState)
+                                status['stateChanged'] = True
+                                status['nextState'] = nextState
+                            else:
+                                logging.info("This was the last question in this survey")
+                                nextState = "SURVEY_COMPLETED#"+str(survey_id)
+                                status['stateChanged'] = True
+                                status['nextState'] = nextState
+                        else:
+                            logging.info("Not done yet, waiting for user to finish")
+                    else:
+                        logging.info("No answers yet, waiting still...")
+                else:
+                    logging.warning("No question found in logs, seems like we did not asked it, what to do now?")
+                    logging.info("Waiting for end of day")
+
+            elif now > end_day_time:
+                logging.info("Changing state to END_DAY")
+                status['stateChanged'] = True
+                status['nextState'] = "END_DAY"
+            else:
+                logging.warning("Can't extract survey and question if from a survey state: "+state)
+                logging.info("Waiting for the end of day")
+
+        elif state.startswith("SURVEY_COMPLETED"):
+            logging.info("We just completed a survey!")
 
 
 
+            if now > end_day_time:
+                logging.info("Changing state to END_DAY")
+                status['stateChanged'] = True
+                status['nextState'] = "END_DAY"
+            else:
+                logging.warning("Can't extract survey and question if from a survey state: "+state)
+                logging.info("Waiting for the end of day")
+            
+        else:
+            logging.warning("Unknown state: "+state)
 
+        return status
+
+    @staticmethod
+    def enter_state(state, user_id):
+        logging.info("In enter state, state: "+state+", user_id: "+user_id)
+
+        #ok, time to send the question if we are in this state
+        if state.startswith("SURVEY_QUESTION_ASKED"):
+            ids = Participant.extract_ids_from_survey_question_state(state)
+            if "survey_id" in ids and "question_id" in ids:
+                survey_id = ids['survey_id']
+                question_id = ids['question_id']
+
+                logging.info("Sending survey id: "+survey_id+", question id: "+question_id+" to user id: "+user_id)
+                user = Participant.query.filter_by(id=user_id).first()
+                if user:
+                    logging.info("User found, name: "+user.name)
+                    user.send_survey_question(survey_id, question_id)
+                else:
+                    logging.warning("Can't find user to send the question to in enter_state")
+            else:
+                logging.warning("Can't extract survey and question if from a survey state: "+state+" in enter state")
+        elif state.startswith("SURVEY_COMPLETED"):
+            sid = Participant.extract_ids_from_survey_state(state)
+            if "survey_id" in sid:
+                survey_id = sid['survey_id']
+
+                logging.info("Sending survey completed thanks, survey id:"+survey_id)
+                user = Participant.query.filter_by(id=user_id).first()
+                if user:
+                    logging.info("User found, name: "+user.name)
+                    user.send_end_survey_message(survey_id)
+                else:
+                    logging.warning("Can't find user to send the question to in enter_state")
+
+        else:
+            logging.info("Nothing to do in ENTER STARE for state: "+state)
+
+    @staticmethod
+    def in_state(state, user_id):
+        if state == "DAY_START" or state.startswith("SURVEY_COMPLETED"):
+            logging.info("I am in state: "+state)
+            
+
+            user = Participant.query.filter_by(id=user_id).first()
+            if user:
+                pass
+                #user.send_dm_message("Hey, I am just a work reflection study bot and will send you a work report request soon. I can't do much more at the moment.")
+            else:
+                logging.warning("Can't find user to send the reply to in IN_STATE!")
         
 
+    @staticmethod
+    def exit_state(state, user_id):
+        if state == "DAY_START":
+            logging.info("Sending survey start welcome")
+            user = Participant.query.filter_by(id=user_id).first()
+            if user:
+                logging.info("User found, name: "+user.name)
+                user.send_start_survey_message()
+            else:
+                logging.warning("Can't find user to send the welcome message to in EXIT_STATE!")
 
-class TeamApproval(db.Model):
-    id = db.Column(db.String(80), primary_key=True)
-    authorization_token = db.Column(db.String(128))
-    timestamp = db.Column(db.DateTime())
+    @staticmethod
+    def is_answering_finished(responses, method):
+        logging.info("Detrmining if answering the question is done")
+        if method == "ONE_ANSWER":
+            if responses.count() > 0:
+                return True
+            else:
+                return False
+        elif method == "TILL_DONE":
+            for ans in responses:
+                text = ans.text.replace(' ','')
+                if "done".upper() == text.upper():
+                    return True
+                else:
+                    return False
+        return False
 
-    def __init__(self, team_id, authorization_token, timestamp):
-        self.id = team_id
-        self.timestamp = timestamp
-        self.authorization_token = authorization_token
 
+    @staticmethod
+    def extract_ids_from_survey_question_state(state):
+        logging.info("Trying to extract survey id and question id from state: "+state)
+        s_idx = state.find("#")
+        q_idx = state.find("$")
 
-class SurveyQuestionLog(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime())
-    user_id = db.Column(db.String(80)) 
-    survey_id = db.Column(db.Integer)
-    question_id = db.Column(db.Integer)
-    question_type = db.Column(db.String(80))
-    text = db.Column(db.Text)
+        if s_idx > -1 and q_idx > -1:
+            s_id = state[s_idx+1:q_idx]
+            q_id = state[q_idx+1:]
 
-    def __init__(self, user_id, survey_id, question_id, question_type, text):
-        self.timestamp = datetime.datetime.utcnow()
-        self.user_id = user_id
-        self.survey_id = survey_id
-        self.question_id = question_id
-        self.question_type = question_type
-        self.text = text
+            logging.info("Survey id: "+s_id+", question id: "+q_id)
+            return {"survey_id": s_id, "question_id": q_id}
+
+        else:
+            logging.warning("We are in trouble, we are in survey question state, but the survey id or question id are not passed!!!")
+
+        return {}
+
+    @staticmethod
+    def extract_ids_from_survey_state(state):
+        logging.info("Trying to extract survey id  from state: "+state)
+        s_idx = state.find("#")
+
+        if s_idx > -1 :
+            s_id = state[s_idx+1:]
+
+            logging.info("Survey id: "+s_id)
+            return {"survey_id": s_id}
+        else:
+            logging.warning("We are in trouble, we are in survey question state, but the survey id is not passed!!!")
+        
+        return {}
 
 
 def _event_handler(event_type, slack_event):
@@ -253,9 +531,10 @@ def _event_handler(event_type, slack_event):
                     if participant:
                         logging.info("Participant object found to handle the message")
                         participant.handle_message(channel, message_text)
+                        participant.update()
                     else:
                         logging.warning("No participant found that can handle this message!")
-                        team_bots[team_id].post_message(channel, "Hey I am just a work reflection study bot and you are not a participant. Would you like to participate?")
+                        team_bots[team_id].post_message(channel, "Hey I am just a work reflection study bot and you are not a participant. Would you like to join?")
 
         else:
             logging.warning("No bot found for the team id: <"+team_id+">")
@@ -271,7 +550,7 @@ def get_bot_for_participant(participant_id):
     user_details = Participant.query.filter_by(id=participant_id).first()
     logging.info("Got user details, id: "+user_details.id+", team_id: "+user_details.team_id+", slack_id: "+user_details.slack_id+", name: "+user_details.name)
 
-    logging.info("Getting the team bot that habdles this user")
+    logging.info("Getting the team bot that handles this user")
     if user_details.team_id is not None:
         logging.info("There is team_id provided: " + user_details.team_id)
         if user_details.team_id in team_bots:
@@ -326,6 +605,9 @@ def thanks():
     logging.info("Trying to add team approval to DB...")
     db.session.merge(teamApproval)
     db.session.commit()
+
+    #give participant object access to the respective bots
+    #update_participants_bots()
 
     return render_template("thanks.html")
 
@@ -418,14 +700,47 @@ def get_reflective_question():
     logging.info("A question for device_id: {}".format(alexa_device_id))
 
     questions = {
-        "D123": "What did you learn at work today?",
-        "F123": "Why are you still working on reflection? What is the value of that?"
+        "amzn1.ask.device.AEX5M7GZOVQIO5TWUZS2HQEIY5JTUWL4KEBEXBKBP52QP4C4T4WXBO4M7XDXQHMZUSX7GNRNSIZURSKIKP52YE4QRYV2XKNSUH7BVS4P6HJULBJGX27QOGBBJYV5JBXTYIOOKWBXMLQH4P5JREHEOAQ2ZWUQ": "What did you learn at work today?",
+        "amzn1.ask.device.AEX5M7GZOVQIO5TWUZS2HQEIY5JU3J57KRJUR5QWHULRUU3LEHNHI6GTNEJM5L2H6VPTNG52ZZ4572YK73XQP6MFXOJTFKTAXZCAAILLZKG6MMHGUA5WD2L5YV553PM4N7TG4DLL7YMPQKB27QU5ZZWKBLGQ": "Why are you still working on reflection? What is the value of that?"
     }
 
-    json_enc_question = {} # empty response if something went wrong, is handled on the Alexa side now
+    json_enc_question = json.dumps({}) # empty response if something went wrong, is handled on the Alexa side now
     if alexa_device_id in questions:
         json_enc_question = json.dumps({'question_text': questions[alexa_device_id]})
     
+    return make_response(json_enc_question, 200, {"content_type":"application/json"})
+
+@app.route("/setReflectionResponse", methods=["GET", "POST"])
+def log_reflection_response():
+    logging.info("Asked to log reflection response...")
+    alexa_device_id = request.args.get('device_id') #request.form['text']
+    reflection_text = request.args.get('text')
+
+    logging.info("Got a reflection response from Alexa text:{}, device_id:{}".format(reflection_text, alexa_device_id))
+    logging.info("Find the user this reflection response belongs to...")
+
+    json_enc_question = json.dumps({}) # empty response if something went wrong, is handled on the Alexa side now
+
+    user = Participant.query.filter_by(device_id=alexa_device_id).first()
+    if user:
+        user.send_dm_message("Hey, thanks for your reflection, you shared with us: "+reflection_text)
+        surveyQuestionLog = SurveyQuestionLog(
+                                user_id=user.id,
+                                survey_id=None,
+                                question_id=None,
+                                question_type="REFLECTION_RESPONSE",
+                                text=reflection_text)
+
+        logging.info("Logging reflection response received to DB...")
+        db.session.add(surveyQuestionLog)
+        db.session.commit()
+
+        json_enc_question = json.dumps({'logged': "OK"})
+
+    else:
+        logging.warning("Can't find matching user for reflective response, the device id is: "+alexa_device_id)
+
+
     return make_response(json_enc_question, 200, {"content_type":"application/json"})
 
 @app.route("/sendBotMessage", methods=["GET", "POST"])
@@ -465,11 +780,41 @@ def send_bot_message():
 
     return make_response("{}", 200, {"content_type":"application/json"})
 
+@app.route("/updateParticipant", methods=["GET", "POST"])
+def updte_participant():
+    logging.info("Updating selected participant...")
+
+    user_id = request.args.get('user_id')
+
+    logging.info("User for update: {}".format(user_id))
+
+    #1. Find the user
+    logging.info("First trying to find the participant object...")
+    participant = Participant.query.filter_by(id=user_id).first()
+    if participant:
+        logging.info("Participant object found!")
+        participant.update()
+
+        #update the participant in the DB
+        db.session.commit()
+    else:
+        logging.warning("There is not participat object for this participant id: "+user_id)
+
+    return make_response("{}", 200, {"content_type":"application/json"})
+
+
 @app.route("/sendSurveyToParticipant", methods=["GET", "POST"])
 def send_survey_to_participant():
     logging.info("Send survey to participant...")
     survey_id = request.args.get('survey_id')
     user_id = request.args.get('user_id')
+
+    #update_participants_bots()
+
+    logging.info("Checking bots for all the participants!!!!")
+    study_participants = Participant.query.order_by(sqlalchemy.asc(Participant.time_added))
+    for participant in study_participants:
+        logging.info("Checking participant "+participant.id+", name: "+participant.name+", is_bot:" +str(participant.get_bot_reference() != None))
 
     # Let's try the DB now
     logging.info("Trying to send the survey to participant now, user_id:"+user_id+", survey_id:"+survey_id)
@@ -536,7 +881,7 @@ def assign_participant_to_survey():
 
 if __name__ == '__main__':
     logging.info("Loading the server, first load the already authorized team data")
-    DataMgr.load_team_auths()
+    #DataMgr.load_team_auths()
 
     logging.info('Creating all database tables...')
     db.create_all()
@@ -544,11 +889,12 @@ if __name__ == '__main__':
     
     ## Initialize a bot with atuhorization for each team
     logging.info("Create and authorize bot instance for each team we have:")
-    team_list = DataMgr.get_authed_teams()
+    #team_list = DataMgr.get_authed_teams()
+    team_list = TeamApproval.query.order_by(sqlalchemy.desc(TeamApproval.timestamp)).limit(20)
     n = 1
-    for key, value in team_list.items():
-        team_id = key
-        team_auth_token = value['bot_token']
+    for team in team_list:
+        team_id = team.id
+        team_auth_token = team.authorization_token
 
         logging.info("TEAM["+str(n)+"] Key: "+str(team_id) +", Value: "+str(team_auth_token))
 
@@ -558,18 +904,6 @@ if __name__ == '__main__':
         #add the bot to the list
         team_bots[team_id] = teamBot
         n=n+1
-
-    #give users access to their bots
-    logging.info("Finding bots that handle interactions with the participants we have:")
-    study_participants = Participant.query.order_by(sqlalchemy.asc(Participant.time_added))
-    for participant in study_participants:
-        bot_reference = get_bot_for_participant(participant.id)
-        if bot_reference:
-            logging.info("Bot to handle user found!")
-            participant.set_bot_reference(bot_reference)
-        else:
-            logging.warning("We have a problem, there is not bot handling interaction with this participant: "+participant.id)
-
 
     logging.info("Start the actual server...")
     app.run(debug=True)

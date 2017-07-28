@@ -8,7 +8,9 @@ import message
 import pickle
 
 from slackclient import SlackClient
-from dataMgr import DataMgr
+from dataMgr import app
+from dataMgr import db
+from dataMgr import TeamApproval
 
 logging.basicConfig(level=logging.INFO)
 
@@ -99,7 +101,7 @@ class Bot(object):
 
 		team_id = auth_response["team_id"]
 		bot_token = auth_response["bot"]["bot_access_token"]
-		DataMgr.add_new_team_auth(team_id, bot_token)
+		#DataMgr.add_new_team_auth(team_id, bot_token)
 
 		# Auth the current bot
 		self.auth_this_bot(team_id, bot_token)

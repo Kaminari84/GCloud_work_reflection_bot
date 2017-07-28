@@ -38,6 +38,7 @@ if __name__ == '__main__':
 	s2 = Survey(id=2, name="Mid-day survey")
 	q2_1 = SurveyQuestion(id=21, survey_id=2, text="What have you accomplished earlier in the day?")
 	q2_2 = SurveyQuestion(id=22, survey_id=2, text="What are you planning to do for the rest of the day?")
+	q2_3 = SurveyQuestion(id=23, survey_id=2, text="What is really blocking you now?")
 	s2_day1 = SurveySchedule(id=3, survey_id=2, week_day=2, hour=13, minute=0)
 	s2_day2 = SurveySchedule(id=4, survey_id=2, week_day=3, hour=13, minute=0)
 
@@ -58,6 +59,7 @@ if __name__ == '__main__':
 	db.session.merge(s2)
 	db.session.merge(q2_1)
 	db.session.merge(q2_2)
+	db.session.merge(q2_3)
 	db.session.merge(s2_day1)
 	db.session.merge(s2_day2)
 

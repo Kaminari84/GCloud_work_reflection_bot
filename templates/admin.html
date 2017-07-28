@@ -150,6 +150,23 @@
 	  	}
 
 
+	  	function updateParticipant(user_id) {
+	    	console.log("Update the selected particiant: " + user_id);
+
+	    	var request = $.ajax({
+	        	url: "/updateParticipant",
+	        	type: "GET",
+	        	data: {user_id: user_id},
+	        	dataType: "html",
+	        	async: true, 
+	        	success : function (msg)
+	        	{
+	          		console.log( "Sending update request to participant! ("+user_id+")" );
+	          		location.reload();
+	        	}
+	      	});
+	  	}
+
 	</script>
 </head>
 <body>
@@ -162,10 +179,12 @@
 			<th>Team ID</th>
 			<th>Slack ID</th>
 			<th>Name</th>
+			<th>State</th>
 			<th>Timezone</th>
 			<th>Email</th>
 			<th>Phone</th>
 			<th>Device ID</th>
+			<th></th>
 		</tr>
 	{% for x in study_participants %}
 		<tr>
@@ -174,10 +193,19 @@
 			<td>{{ x.team_id }}</td>
 			<td>{{ x.slack_id }}</td>
 			<td>{{ x.name }}</td>
+			<td>{{ x.state }}</td>
 			<td>{{ x.timezone }}</td>
 			<td>{{ x.email }}</td>
 			<td>{{ x.phone }}</td>
-			<td>{{ x.device_id }}</td>
+			<td>
+				{% if device_id is not none %}
+					{{ x.device_id[-10:] }}
+				{% else %}
+					{{ x.device_id }}
+				{% endif %}
+
+			</td>
+			<td><button type="button" onclick="return updateParticipant('{{ x.id }}');">Update participant</button></td>
 		</tr>
     {% endfor %}
     </table>
@@ -216,7 +244,7 @@
 							{% set weekday_text = "Monday" if y.week_day == 0 %}
 							{% set weekday_text = "Tuesday" if y.week_day == 1 %}
 
-							<li> {{ y.id }}. {{ y.week_day | replace("0","Monday") | replace("1","Tuesday") | replace("2","Wednesday") | replace("3","Thursday") | replace("4","Friday") | replace("5", "Saturday") | replace("6", "Sunday")}}, {{ y.hour }}:{{ y.minute | replace("0", "00") }}</li>
+							<li> {{ y.id }}. {{ y.week_day | replace("0","Monday") | replace("1","Tuesday") | replace("2","Wednesday") | replace("3","Thursday") | replace("4","Friday") | replace("5", "Saturday") | replace("6", "Sunday")}}, {{ y.hour }}:{{ y.minute | replace("0 ", "00") }}</li>
 						{% endif %}
 					{% endfor %}
 				</ul>
