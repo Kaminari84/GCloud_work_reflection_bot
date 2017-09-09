@@ -6,13 +6,23 @@ runtime_config:
   python_version: 3
 
 env_variables:
-  CLIENT_ID: '201690607605.215068279202'
-  CLIENT_SECRET: 8dd68f33aa6ed1ca0fb2b2387160f36e
-  VERIFICATION_TOKEN: SygxnThNycOGEdCljd6nlvxJ
+  BOT_NAME: robota
+  #event_api_bot
+  CLIENT_ID: '201690607605.222359232928'
+  #'201690607605.215068279202'
+  CLIENT_SECRET: '63085213c791f5560641847943a66b24'
+  #8dd68f33aa6ed1ca0fb2b2387160f36e
+  VERIFICATION_TOKEN: 'cr1zwxMt0g6pDe9qDaHBq8YB'
+  #SygxnThNycOGEdCljd6nlvxJ
   # Replace user, password, database, and instance connection name with the values obtained
   # when configuring your Cloud SQL instance.
   SQLALCHEMY_DATABASE_URI: >-
     mysql+pymysql://root:Fukuzatsu@/bot_db?unix_socket=/cloudsql/bot-test-174121:us-central1:bot-cloud-sql
-  USER_RESPONSE_STYLE: TILL_DONE
+  USER_RESPONSE_STYLE: 'ONE_ANSWER'
+  #TILL_DONE
+  #ONE_ANSWER
+  MAX_RMDS: 3
+  RMD_DELAY: 30
+  SERVER_URL: https://bot-test-174121.appspot.com
 beta_settings:
     cloud_sql_instances: bot-test-174121:us-central1:bot-cloud-sql

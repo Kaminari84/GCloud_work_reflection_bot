@@ -18,3 +18,4 @@ Werkzeug==0.12.2
 PyMySQL==0.7.11
 Flask-SQLAlchemy==2.2
 uuid==1.30
+pytz==2017.2

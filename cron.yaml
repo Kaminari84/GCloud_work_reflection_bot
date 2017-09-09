@@ -1,0 +1,6 @@
+cron:
+#
+#- description: daily update of work reflection
+#  url: /cronTick
+#  schedule: every 5 minutes from 8:00 to 23:00
+#  timezone: PST8PDT

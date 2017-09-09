@@ -1,0 +1,36 @@
+<!doctype html>
+<h1>User {{user_id}} survey log</h1>
+<table>
+	<tr>
+		<th>#</th>
+		<th>ID</th>
+		<th>User id</th>
+		<th>Survey id</th>
+		<th>Schedule id</th>
+		<th>Time started</th>
+		<th>Reminders sent</th>
+		<th>Time comleted</th>
+		<th>Time closed</th>
+	</tr>
+{% for x in survey_log %}
+	<tr>
+		<td>{{ loop.index }}</td>
+		<td>{{ x.id }}</td>
+		<td>{{ x.user_id }}</td>
+		<td>{{ x.survey_id }}</td>
+		<td>{{ x.schedule_id }}</td>
+		<td>{{ x.time_started }}</td>
+		<td style='text-align: left'>
+			<ul>
+				{% for y in survey_reminders %}
+					{% if y.survey_log_id==x.id %}
+						<li> {{ y.id }}. Q{{ y.question_id }} - {{ y.timestamp }} {{ y.text }}</li>
+					{% endif %}
+				{% endfor %}
+			</ul>
+		</td>
+		<td>{{ x.time_completed }}</td>
+		<td>{{ x.time_closed }}</td>
+	</tr>
+{% endfor %}
+</table>

@@ -1,0 +1,86 @@
+<!doctype html>
+<head>
+	<title>Your Robota Daily Logs</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	    <!-- Latest compiled and minified CSS -->
+	    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css"> -->
+
+	    <!-- Optional theme -->
+	    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css"> -->
+
+	    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+	    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script> -->
+
+	    <!-- Latest compiled and minified JavaScript -->
+	    <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script> -->
+
+	    <link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/style.css') }}">
+	    <meta name="viewport" content="width=device-width, initial-scale=1">
+  		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+	<div class="center">
+		{% if participant_name is not none %}
+					
+		    <h1>Your Robota Daily Logs</h1>
+		    <!-- {{ participant_name|title}}
+		    <div>First day of the week is: {{ start_date.strftime('%A, %b %d, %Y') }} </div>
+		    <div>Last day of the week is: {{ end_date.strftime('%A, %b %d, %Y') }} </div>-->
+		    <div>
+			    <ul>
+				    {% for x in days %}
+			    	<li style="margin-bottom: 10px"><strong class="lead">{{ x.date.strftime('%A, %b %d, %Y') }}</strong></li>
+			    	<table style="border: 0px solid white">
+			    		{# questions #}
+			    		{% for y in questions %}
+			    			{# show only report question #}
+			    			{% if y.type == "REPORT" %}
+				    			{% if y.day_of_year == x.day_of_year %}
+			    				<tr valign="top" style="border: 0px solid white; 
+			    				{# {% if y.qtype == "Accomplishments" %} 
+								background-color: #DFF0D8 
+								{% elif y.qtype == "Plans" %}
+								background-color: #FCF8E3
+								{% endif %} #}
+			    				">
+			    					<td style="border: 0px solid white">
+			    						<dl>{{ y.qtype }}</dl></mark>
+			    					</td>
+			    					<td style="border: 0px solid white; padding-bottom: 10px">
+				    					{# answers #}
+				    					<ul>
+										{% for z in answers %}
+								    		{% if z.sl_id == y.sl_id and z.sql_id == y.sql_id %}
+												<li> 
+												<mark {% if z.qtype == "Accomplishments" %} 
+												class="bg-success" 
+												{% elif z.qtype == "Plans" %}
+												class="bg-warning"
+												{% endif %}> 
+
+												{{ z.text }}
+												</mark>
+												</li>
+											{% endif %}
+										{% endfor %}
+										</ul>
+									</td>
+								</tr>
+								{% endif %} 
+							{% endif %} {# end if.type == "REPORT" #}
+						{% endfor %}
+					</table>
+					{% endfor %}
+				</ul>
+			</div>
+			    			
+	    {% else %}
+
+			<h1>You need to be logged in to access your personal dashboard!</h1>
+		
+		{% endif %}
+	</div>
+</body>

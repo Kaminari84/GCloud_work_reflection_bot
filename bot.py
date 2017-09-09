@@ -14,6 +14,8 @@ from dataMgr import TeamApproval
 
 logging.basicConfig(level=logging.INFO)
 
+BOT_NAME = os.environ['BOT_NAME']
+
 """ Design Decision: One bot instance represents one authorized bot for the team """
 class Bot(object):
 
@@ -29,7 +31,7 @@ class Bot(object):
 	""" Instanciates a Bot object to handle Slack onboarding interactions."""
 	def __init__(self):
 		super(Bot, self).__init__()
-		self.name = "event_api_bot"
+		self.name = BOT_NAME
 		self.emoji = ":robot_face:"
 		# When we instantiate a new bot object, we can access the app
 		# credentials we set earlier in our local development environment.
@@ -208,7 +210,14 @@ class Bot(object):
 		return channel_ids
 
 	def open_dm(self, user_id):
-		new_dm = self.client.api_call("im.open", user=user_id)
+		auth_token = self.bot_token
+		new_dm = self.client.api_call("im.open", 
+			token=auth_token,
+			user=user_id)
+		
+		logging.info("Result from im.ipen:", new_dm)
+		for key, value in new_dm.items():
+			logging.info("Key: "+str(key) +", Value: "+str(value))
 		dm_id = new_dm["channel"]["id"]
 		return dm_id
 

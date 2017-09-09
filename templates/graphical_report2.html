@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Your Robota Daily Logs</title>
+
+    <!-- Latest compiled and minified CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+	<!-- Optional theme -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+	<!-- Latest compiled and minified JavaScript -->
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/style-visualization.css') }}">
+
+    <script type="text/javascript">
+  		$( document ).ready(function() {
+	    	console.log( "ready!" );
+
+	    	//$('[data-toggle="popover"]').popover(); 
+	    	// Contain the popover within the body NOT the element it was called in.
+			$('[data-toggle="popover"]').popover({
+			    container: 'body'
+			});
+
+	    	/*$('body').popover({
+			    selector: '[data-toggle="popover"]'
+			});*/
+
+
+	  	});
+
+	  	$(window).click(function() {
+			console.log($(event.target).attr('class'));
+			
+	  		if(!$(event.target).is('.selected') && !$(event.target).is('.popover'))
+			{
+				if ($(event.target).parents('.popover').length) {
+					console.log("Clicked on open popover!");
+				} else {
+					console.log("Clicked somewhere outside!");
+			    	$('.bulb').popover('hide');
+			    	$('.bulb').removeClass('selected');
+				}
+			}
+		});
+
+	  	function showReportPopup(param) {
+			if ($(param).hasClass('selected')) {
+				$('.bulb').popover('hide');
+				$('.bulb').removeClass('selected');
+			} else {
+				$('.bulb').not(param).popover('hide');
+				$('.bulb').not(param).removeClass('selected');
+
+				$(param).addClass('selected');
+	    		$(param).popover('show');
+			}
+
+	    	console.log("Clicked on it!");
+	  	}
+
+	  	function stopAudio(id) {
+        	console.log("Audio stopped for id:"+id)
+		    ///var audio = document.getElementById('audio');
+		    //audio.stop();
+		    $('#play_'+id).removeClass('glyphicon-pause')
+	        $('#play_'+id).addClass('glyphicon-play-circle')
+		}
+
+	  	function play(id){
+       		//var audio = document.getElementById("audio");
+       		//audio.play();
+       		console.log("Playing for id:"+id)
+       		var audio = document.getElementById('audio_'+id);
+	        if (audio.paused) {
+	            audio.play();
+	            $('#play_'+id).removeClass('glyphicon-play-circle')
+	            $('#play_'+id).addClass('glyphicon-pause')
+	        } else{
+	            audio.pause();
+	            audio.currentTime = 0
+	            $('#play_'+id).addClass('glyphicon-play-circle')
+	            $('#play_'+id).removeClass('glyphicon-pause')
+	        }
+
+	        audio.addEventListener('ended', function(){ stopAudio(id); });
+        }
+
+        
+
+	</script>
+  </head>
+  <body>
+    <div class="container">
+    {% if participant_name is not none %}
+      <div class="page-header" >
+        <h1 class="text-center">Your Robota Daily Logs</h1>
+      </div>
+
+      <div class="row">
+        <div class="col-xs-2 text-right"></div>
+        <div class="col-xs-8">
+        	<div class="row">
+	            <div class="col-xs-1 text-center"></div>
+	            <div class="col-xs-2 text-center"><p class="lead">Monday</p></div>
+	            <div class="col-xs-2 text-center"><p class="lead">Tuesday</p></div>
+	            <div class="col-xs-2 text-center"><p class="lead">Wednesday</p></div>
+	            <!-- style="min-width: 50px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" -->
+	            <div class="col-xs-2 text-center"><p class="lead">Thursday</p></div>
+	            <div class="col-xs-2 text-center"><p class="lead">Friday</p></div>
+	            <div class="col-xs-1 text-center"></div>
+	          </div>
+        </div>
+        <div class="col-xs-2"></div>
+      </div>
+
+      <!-- weeks -->
+      {% for week_number, week in weeks.items() %}
+      <div class="row" style="margin-bottom: 50px">
+        <div class="col-xs-2"><h4 class="text-center">Week of <br />{{ week.monday.strftime('%b %d, %Y') }}</h4></div>
+        <div class="col-xs-8">
+       		<!-- Monday - Friday -->
+       		<div class="row">
+           		<div class="col-xs-1"></div>
+           		
+           		{% for day in days %}
+			    	{% if day.week_number == week.week_number %}
+			    		<div class="col-xs-2">
+			    			<!--Is data: {{ day.is_data }} <br />
+			    			Is reflection: {{ day.is_reflection }} <br />-->
+			    			<div class="bulb
+			    				{% if day.is_past == 1 %}
+				    				{% if day.is_data==1 and day.is_reflection==1 %} 
+				    					report_reflection 
+				    				{% elif day.is_data==1 and day.is_reflection==0 %} 
+				    					report_no_reflection
+				    				{% elif day.is_data==0 and day.is_reflection==1 %} 
+				    					no_report_reflection  <!-- PROBLEM -->
+				    				{% else %}
+				    					no_report_no_reflection 
+				    				{% endif %}
+				    			{% else %}
+				    				not_asked
+				    			{% endif %}"
+					           	style="margin: auto;" 
+					           	{% if day.is_data==1 or day.is_reflection==1 %} data-toggle="popover" {% endif %} 
+					           	title="{{ day.date.strftime('%A, %b %d, %Y') }}" 
+								data-html="true" 
+								data-content="<div>
+							    	<ul>
+							    	{# questions #}
+							    	{% for y in questions %}
+							    		{# show only report question #}
+				    					{% if y.type == 'REPORT' %}
+								    		{% if y.day_of_year == day.day_of_year %}
+												
+												<li> <strong>{{ y.text }}</strong></li>
+												<ul class='list-unstyled'>
+												{# answers #}
+												{% for z in answers %}
+										    		{% if z.sl_id == y.sl_id and z.sql_id == y.sql_id %}
+														<li><mark 
+															{% if z.qtype == 'Accomplishments' %}
+																class='bg-success'
+															{% elif z.qtype == 'Plans' %}
+																class='bg-warning'
+															{% endif %}
+															> 
+															{{ z.text }} 
+														</mark></li>
+													{% endif %}
+												{% endfor %}
+												</ul>	
+
+											{% endif %}
+										{% endif %} {# end if.type == 'REPORT' #}
+									{% endfor %}
+									</ul>	
+									
+									{# Only reflection questions #}
+									{% if day.is_reflection==1 %} 
+										<div style='margin-top: 10px; background-color: #eeeeee'>
+										<p class='text-muted' style='margin-bottom: 0px; margin-left: 5px'>REFLECTION</p>
+										<hr style='margin-top: 0px; margin-bottom: 5px' />
+										</div>
+										{# <div class='bg-inverse text-white'>REFLECTION</div> #}
+
+										<ul>
+										{% for q_id, y in reflective_questions_grouped.items() %}
+								    		{# show only reflection question #}
+					    					{% if y.type == 'REFLECTION' %}
+					    						{% if y.day_of_year == day.day_of_year %}
+					    							<li> <strong>{{ y.text }}</strong></li>
+					    							<ul class='list-unstyled'>
+													
+													{# if y.modality == 'SLACK' #}
+														{# answers #}
+														{% for z in answers %}
+												    		{% if z.day_of_year == y.day_of_year and z.sql_id == y.sql_id and z.s_id != 99 %}
+																<li><mark class='bg-info'> {{ z.text }} </mark></li>
+															{% endif %}
+														{% endfor %}	
+													{# elif y.modality == 'WAND' #}
+														{# audio #}
+														{% for z in audio_recordings %}
+															{% if z.q_day_of_year == y.day_of_year %}
+																<li>
+																	{# <a href='{{ z.audio_url }}'>Recording #{{ z.id }}</a> #}
+
+																	{# <input type='button' value='Recording #{{ z.id }}' onclick='play({{ z.id }})'> #}
+
+																	<span style='float: left; position: relative; min-width: 50px; margin-top: 5px; margin-bottom:5px; text-align: center; margin-left: auto; margin-right: auto; display: table;'>
+																		<audio id='audio_{{ z.id }}' src='{{ z.audio_url }}'></audio> 
+
+																		<div style='margin:auto; width: 100%' class='glyphicon glyphicon-play-circle b-play' id='play_{{ z.id }}' onclick='play({{ z.id }})'></div>
+																		
+																		<div style='text-align: center;'>
+																			{% if z.timestamp.strftime('%a')!=z.rq_date.strftime('%a') %} 
+																				{{ z.timestamp.strftime('%a') }}<br />
+																			{% endif %}
+																			{{ z.timestamp.strftime('%H:%M') }}</div>
+																	</span>
+
+
+																</li>
+															{% endif %}
+														{% endfor %}
+													{# endif #}
+
+													</ul>
+
+					    						{% endif %}
+					    					{% endif %} {# end if.type == 'REFLECTION' #}
+										{% endfor %}
+										</ul>
+									{% endif %}
+							    	
+							    </div>"
+								data-placement="auto top" 
+								{% if day.is_data==1 or day.is_reflection==1 %} data-trigger="manual" {% endif %}
+								{% if day.is_data==1 or day.is_reflection==1 %} onclick="return showReportPopup(this);" {% endif %}
+								>
+							</div>
+
+			    		</div>
+			    	{% endif %}
+			    {% endfor %}
+
+           		<div class="col-xs-1"></div>
+           	</div>
+        </div>
+        <div class="col-xs-2 vcenter">
+        	<button type="button" class="btn btn-link" onclick=" window.open('/by_day_dashboard?user_id={{ user_id }}&start_date={{ week.monday.strftime('%Y-%m-%d') }}&weeks=1','_blank')">Weekly report</button>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+		<div class="page-header" >
+        <h1 class="text-center">You need to be logged in to access your personal dashboard!</h1>
+      </div>
+			
+	{% endif %}
+
+     </div> <!-- container -->
+  </body>
+</html>

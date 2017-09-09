@@ -1,0 +1,27 @@
+<!doctype html>
+<h1>User {{user_id}} assigned reflective questions</h1>
+<table>
+	<tr><th>#</th><th>ID</th><th>Date</th><th>Question id</th><th>Text</th><th>Type</th>
+		<th>Task</th>
+		{# <th>#C</th><th>#prg</th><th>#P</th> #}
+		<th>Final text</th></tr>
+{% for x in reflective_questions %}
+	<tr>
+		<td>{{ loop.index }}</td>
+		<td>{{ x.id }}</td>
+		<td>{{ x.date }}</td>
+		<td>{{ x.question_id }}</td>
+		<td>{{ x.text|safe }}</td>
+		<td>{{ x.type }}</td>
+
+		<td>
+			{{ x.task }}
+			<button type="button" onclick="return setTaskForUserReflectiveQuestion('{{user_id}}',{{ x.id }});">+</button>
+		</td>
+		{# <td>{{ x.n_completed }}</td>
+		<td>{{ x.n_progress }}</td>
+		<td>{{ x.n_planned }}</td> #}
+		<td>{{ x.final_text.question_text }}</td>
+	</tr>
+{% endfor %}
+</table>

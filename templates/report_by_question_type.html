@@ -1,0 +1,71 @@
+<!doctype html>
+<head>
+	<title>Your Robota Daily Logs</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	    <!-- Latest compiled and minified CSS -->
+	    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css"> -->
+
+	    <!-- Optional theme -->
+	    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css"> -->
+
+	    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+	    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script> -->
+
+	    <!-- Latest compiled and minified JavaScript -->
+	    <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script> -->
+
+	    <link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/style.css') }}">
+	    <meta name="viewport" content="width=device-width, initial-scale=1">
+  		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+	<div class="center">
+		{% if participant_name is not none %}
+					
+		    <h1>Your Robota Daily Logs</h1>
+		    <!-- {{ participant_name|title}}
+		    <div>First day of the week is: {{ start_date.strftime('%A, %b %d, %Y') }} </div>
+		    <div>Last day of the week is: {{ end_date.strftime('%A, %b %d, %Y') }} </div>-->
+		    <div>
+			    <ul>
+			    <!-- questions -->
+			    	{% for q_type, question in questions.items() %}
+			    		<!-- show only report question -->
+			    		{% if question.type == "REPORT" %}
+			    			<li><h4>{{ question.qtype }}</h4></li>
+			    			<!-- days -->
+			    			<ul>
+			    			{% for day_key, day in days.items() %}
+			    				{% if day.qtype == q_type %}
+			    					
+			    					<li><strong>{{ day.date.strftime('%A, %b %d, %Y') }}</strong></li>
+			    					
+			    					<ul class="list-unstyled">
+									<!-- answers -->
+									{% for answer in answers %}
+							    		{% if answer.day_of_year == day.day_of_year and answer.qtype == q_type %}
+											<li><mark> {{ answer.text }} </mark></li>
+										{% endif %}
+									{% endfor %}
+									</ul>
+
+			    				{% endif %}
+			    			{% endfor %}
+			    			</ul>
+			    		{% endif %} 
+			    	{% endfor %}
+				</ul>
+			</div>
+
+
+
+	    {% else %}
+
+			<h1>You need to be logged in to access your personal dashboard!</h1>
+		
+		{% endif %}
+	</div>
+</body>

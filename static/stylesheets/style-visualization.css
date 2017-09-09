@@ -1,0 +1,136 @@
+body {
+    background-image: url("../images/robota_large_pixelated_720-small.png");
+    background-repeat: no-repeat;
+    background-position: left top;
+    background-color: #F3F3F3;
+    margin-right: 0px;
+    margin-top: 0px;
+}
+
+body::after{
+    position:absolute; 
+    width:0; 
+    height:0; 
+    overflow:hidden; 
+    z-index:-1;
+    content:url("../images/robota_large_pixelated_720-small.png") 
+    url("../images/all_filled_bulb.png") 
+    url("../images/all_filled_bulb-hover.png") 
+    url("../images/all_filled_bulb-selected.png")
+    url("../images/report_no_reflection_bulb.png") 
+    url("../images/report_no_reflection_bulb-hover.png")
+    url("../images/report_no_reflection_bulb-selected.png")
+    url("../images/no_report_reflection_bulb.png")
+    url("../images/no_report_reflection_bulb-hover.png")
+    url("../images/no_report_reflection_bulb-selected.png")
+     url("../images/no_report_no_reflection_bulb.png")
+    url("../images/not_asked_bulb.png")
+    ;
+}
+
+.glyphicon.glyphicon-play {
+    font-size: 35px;
+    color: #33cc33;
+}
+
+.glyphicon.glyphicon-play-circle {
+    font-size: 35px;
+    color: #33cc33;
+}
+
+.glyphicon.glyphicon-stop {
+    font-size: 35px;
+    color: #ff5555;
+}
+
+.glyphicon.glyphicon-pause {
+    font-size: 35px;
+    color: #ff5555;
+}
+
+
+
+.col-xs-2 {
+   display: inline-block;
+}
+
+.vcenter {
+    float:none;
+    display:inline-block;
+    vertical-align:middle;
+    margin-right:-4px;
+}
+
+/*
+@media all and (max-width: 480px)  {
+    .half {
+        float: left !important;
+        width: 50% !important;
+    }
+}*/
+
+.bulb {
+	width: 70px;
+	height: 70px;
+
+	margin-right: 0px;
+    margin-top: 0px;
+
+    background-repeat: no-repeat;
+    background-position: center center;
+}
+
+/* The max width is dependant on the container (more info below) */
+.popover{
+    max-width: 300px; /* Max Width of the popover (depending on the container!) */
+}
+
+/* REPORT + REFLECTION */
+.report_reflection {
+	background-image: url("../images/all_filled_bulb.png");
+}
+
+.report_reflection:hover {
+	background-image: url("../images/all_filled_bulb-hover.png");
+}
+
+.report_reflection.selected {
+	background-image: url("../images/all_filled_bulb-selected.png");
+}
+
+/* REPORT - NO REFLECTION */
+.report_no_reflection {
+	background-image: url("../images/report_no_reflection_bulb.png");
+}
+
+.report_no_reflection:hover {
+	background-image: url("../images/report_no_reflection_bulb-hover.png");
+}
+
+.report_no_reflection.selected {
+	background-image: url("../images/report_no_reflection_bulb-selected.png");
+}
+
+/* NO REPORT - NO REFLECTION */
+.no_report_no_reflection {
+	background-image: url("../images/no_report_no_reflection_bulb.png");
+}
+
+/* NO REPORT BUT REFLECTION */
+.no_report_reflection {
+    background-image: url("../images/no_report_reflection_bulb.png");
+}
+
+.no_report_reflection:hover {
+    background-image: url("../images/no_report_reflection_bulb-hover.png");
+}
+
+.no_report_reflection.selected {
+    background-image: url("../images/no_report_reflection_bulb-selected.png");
+}
+
+/* NOY ASKED YET */
+.not_asked {
+	background-image: url("../images/not_asked_bulb.png");
+}
+

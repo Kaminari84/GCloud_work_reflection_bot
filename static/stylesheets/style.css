@@ -13,3 +13,92 @@ table th {
 table.borderless > td {
     border: 0px solid black;
 }
+
+table#visualization, #visualization > td {
+	border: 0px solid white;
+	text-align: center;
+	margin: 20px;
+}
+
+.tmpl_field {
+	color: #FF8888;
+	font-weight: bold;
+}
+
+.center {
+    margin: auto;
+    width: 50%;
+    padding: 10px;
+    border: 0px solid green;
+}
+
+/* Visualization dashboard styles */
+
+.circle {
+	height: 70px;
+	width: 70px;
+	border-radius: 50%;
+}
+
+
+
+.circle.hollow:hover { 
+    border: 1px solid #5fccff;
+}
+
+.selected {
+	border: 2px solid black;
+}
+
+.filled {
+	background-color: #66aa66;
+	/*border: 10px solid #99cc99;*/
+}
+
+.reflection {
+	border: 10px solid #99cc99;
+}
+
+.circle.reflection:hover { 
+    background-color: #3d99F0;
+    border: 10px solid #5fccff;
+}
+
+.no_reflection {
+	border: 1px solid #99cc99;
+	height: 55px;
+	width: 55px;
+}
+
+.circle.no_reflection:hover { 
+    background-color: #3d99F0;
+    border: 0px solid #5fccff;
+}
+
+.no_reflection.hollow {
+	background-color: #dddddd;
+	border: 0px solid #333333;
+	height: 55px;
+	width: 55px;
+}
+
+.no_reflection.hollow:hover {
+	background-color: #dddddd;
+	border: 0px solid #333333;
+	height: 55px;
+	width: 55px;
+}
+
+
+
+body, html {
+	/*height: 100%;*/
+}
+
+body {
+	/*padding: 0:
+	background-color: #333;
+	display: flex;
+	align-items: center;
+	justify-content: center;*/
+}

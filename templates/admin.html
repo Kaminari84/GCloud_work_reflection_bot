@@ -30,6 +30,14 @@
 			    console.log("Changed in outer function....");
 			    //showMembersForTeam();
 			});
+
+			//setInterval(function(){ alert("Hello"); }, 3000);
+
+			/*var ts_python = 1503438179//15033640908173969
+			var d = new Date(ts_python*1000);
+			var date_str = d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()+" "+d.getHours()+":"+d.getMinutes()+":"+d.getSeconds();
+
+			alert("Date is: "+date_str)*/
 	  	});
 
 	  	function sendBotMessage() {
@@ -149,7 +157,6 @@
 		    }
 	  	}
 
-
 	  	function updateParticipant(user_id) {
 	    	console.log("Update the selected particiant: " + user_id);
 
@@ -167,15 +174,162 @@
 	      	});
 	  	}
 
+	  	function updateAllParticipants() {
+	    	console.log("Update all particiants...");
+
+	    	var request = $.ajax({
+	        	url: "/updateAllParticipants",
+	        	type: "GET",
+	        	data: {},
+	        	dataType: "html",
+	        	async: true, 
+	        	success : function (msg)
+	        	{
+	          		console.log("Sending update request for all participants!");
+	          		location.reload();
+	        	}
+	      	});
+	  	}
+
+	  	function assignReflectiveQuestions(user_id, name) {
+	    	console.log("Assigning reflective quetions for participant: " + user_id);
+
+	    	if (confirm("Do you really want to assign new reflective questions to participant "+name+" ?") == true) {
+        		alert("Assigning reflective questions to participant: "+name+" !");
+
+		    	var request = $.ajax({
+		        	url: "/assignReflectiveQuestionsToParticipant",
+		        	type: "GET",
+		        	data: {user_id: user_id},
+		        	dataType: "html",
+		        	async: true, 
+		        	success : function (msg)
+		        	{
+		          		console.log( "Assigning reflective questions to participant! ("+user_id+")" );
+		          		location.reload();
+		        	}
+		      	});
+
+		    } else {
+		    	console.log("Cancelled!")
+		        alert("Cancelled");
+		    }
+	  	}
+
+	  	function setDeviceIDForUser(user_id, name, current_device_id) {
+	    	console.log("Asking to set the device id for user id: "+user_id);
+
+	    	var text = prompt("Please enter the device id to be set for user "+user_id+", name:"+name, current_device_id);
+		    if (text == null || text == "") {
+		        alert("Setting the device cancelled!");
+		    } else {
+		        var request = $.ajax({
+		        	url: "/setDeviceIDForUser",
+		        	type: "GET",
+		        	data: {user_id: user_id, new_device_id: text},
+		        	dataType: "html",
+		        	async: true, 
+		        	success : function (msg)
+		        	{
+		          		console.log( "Sending device id for user success! "+user_id+": ("+text+")" );
+		          		location.reload();
+		        	}
+		      	});
+		    }
+	  	}
+
+	  	function setTaskForUserReflectiveQuestion(user_id, log_id) {
+	  		console.log("Setting the task for user: <"+user_id+"> reflective question id: <"+log_id+">...");
+
+	  		var text = prompt("Please enter the task to be set for user "+user_id+" question...");
+		    if (text == null || text == "") {
+		        alert("Setting the task cancelled!");
+		    } else {
+		        var request = $.ajax({
+		        	url: "/setTaskForUserRQ",
+		        	type: "GET",
+		        	data: {user_id: user_id, log_id: log_id, task: text},
+		        	dataType: "html",
+		        	async: true, 
+		        	success : function (msg)
+		        	{
+		          		console.log( "Setting task for user success! "+user_id+", "+log_id+": ("+text+")" );
+		          		//location.reload();
+		        	}
+		      	});
+		    }
+	  	}
+
+	  	function showReflectiveQuestionAssignmentForParticipant() {
+		  	console.log("Show reflective question assignment for participant....");
+		  	
+		  	participant_id = $('input[name=participant]:checked', '').val();
+		  	console.log("Participant id: " + participant_id);
+
+		  	if (participant_id !== undefined && participant_id !== null) {
+			  	var request = $.ajax({
+			        url: "/getRQsForParticipant",
+			        type: "GET",
+			        data: {user_id: participant_id },
+			        dataType: "html",
+			        async: true, 
+			        success : function (msg)
+			        {
+			          	console.log( "Getting the RQs for participant a success! ("+msg+")" );
+			          	var members_html = msg;
+
+			          	console.log("Members inner html: " + members_html);
+
+			  			member_div = document.getElementById("reflective_question_assignment");
+			  			member_div.innerHTML = members_html;
+			        }
+			    });
+			} else {
+				alert("Participant not selected!")
+			}
+		}
+
+		function showSurveyLogForParticipant() {
+		  	console.log("Show survey log for participant....");
+		  	
+		  	participant_id = $('input[name=participant]:checked', '').val();
+		  	console.log("Participant id: " + participant_id);
+
+		  	if (participant_id !== undefined && participant_id !== null) {
+			  	var request = $.ajax({
+			        url: "/getSurveyLogForParticipant",
+			        type: "GET",
+			        data: {user_id: participant_id },
+			        dataType: "html",
+			        async: true, 
+			        success : function (msg)
+			        {
+			          	console.log( "Getting the survey log for participant a success! ("+msg+")" );
+			          	var members_html = msg;
+
+			          	console.log("Members inner html: " + members_html);
+
+			  			member_div = document.getElementById("survey_log");
+			  			member_div.innerHTML = members_html;
+			        }
+			    });
+			} else {
+				alert("Participant not selected!")
+			}
+		}
 	</script>
 </head>
 <body>
 <center>
+	<div>UTC now: {{ utc_time }}</div>
+	<div>PST now (our server baseline): {{ pst_time }}</div>
+	<button type="button" onclick="return updateAllParticipants();"> Update all</button>
 	<h1>Participants enrolled in study</h1>
 	<table>
 		<tr>
 			<th>#</th>
 			<th>Time added</th>
+			<th>Last update</th>
 			<th>Team ID</th>
 			<th>Slack ID</th>
 			<th>Name</th>
@@ -185,11 +339,15 @@
 			<th>Phone</th>
 			<th>Device ID</th>
 			<th></th>
+			<th></th>
+			<th></th>
+			<th></th>
 		</tr>
 	{% for x in study_participants %}
 		<tr>
 			<td><input type="radio" name="participant" value="{{ x.id }}">{{ loop.index }}</td>
 			<td>{{ x.time_added }}</td>
+			<td>{{ x.last_update }}</td>
 			<td>{{ x.team_id }}</td>
 			<td>{{ x.slack_id }}</td>
 			<td>{{ x.name }}</td>
@@ -197,25 +355,49 @@
 			<td>{{ x.timezone }}</td>
 			<td>{{ x.email }}</td>
 			<td>{{ x.phone }}</td>
-			<td>
-				{% if device_id is not none %}
+			<td style="text-align: right">
+				{% if x.device_id is not none %}
 					{{ x.device_id[-10:] }}
 				{% else %}
 					{{ x.device_id }}
 				{% endif %}
-
+				<button type="button" onclick="return setDeviceIDForUser('{{ x.id }}','{{ x.name }}','{{ x.device_id }}');">+</button>
 			</td>
-			<td><button type="button" onclick="return updateParticipant('{{ x.id }}');">Update participant</button></td>
+			<td>
+				<a href='/by_day_dashboard?user_id={{ x.id }}' target='_blank'>day</a><br />
+				<a href='/dashboard?user_id={{ x.id }}' target='_blank'>group question</a><br />
+				<a href='/dashboard2?user_id={{ x.id }}' target='_blank'>question</a><br />
+				<a href='/visualization?user_id={{ x.id }}' target='_blank'>visual</a>
+			</td>
+			<td>
+				<button type="button" onclick="return sendDirectMessage( '{{ x.slack_id }}', '{{ x.team_id }}', '{{ x.name }}' );">Send Direct Message</button>
+			</td>
+			<td>
+				<button type="button" onclick="return updateParticipant('{{ x.id }}');">Update</button>
+			</td>
+			<td>
+				<button style="background-color:#FFDDDD" type="button" onclick="return assignReflectiveQuestions('{{ x.id }}','{{ x.name }}');">Assign reflective questions</button>
+			</td>
 		</tr>
     {% endfor %}
     </table>
     <br />
-
+    	<button type="button" onclick="return showSurveyLogForParticipant();">Show survey log</button>
+    	<button type="button" onclick="return showReflectiveQuestionAssignmentForParticipant();">Show reflective <br />question assignment</button>
+    <br />
+    	<div id="survey_log">
+    	</div>
+    	
+    	<div id="reflective_question_assignment">
+    	</div>
+    <br />
     <h1>Defined surveys</h1>
 	<table>
 		<tr>
 			<th>#</th>
 			<th>Name</th>
+			<th>Type</th>
+			<th>Modality</th>
 			<th>Questions</th>
 			<th>Schedule</th>
 			<th>Current participant assignments</th>
@@ -224,8 +406,10 @@
 		</tr>
 	{% for x in survey_schemas %}
 		<tr>
-			<td><input type="radio" name="survey" value="{{ x.id }}">{{ x.id }}</td>
+			<td>{{ x.id }}</td>
 			<td>{{ x.name }}</td>
+			<td>{{ x.type }}</td>
+			<td>{{ x.modality }}</td>
 			<td style='text-align: left'>
 				<ul>
 					{% for y in survey_questions %}
@@ -255,7 +439,7 @@
 						{% if y.survey_id==x.id %}
 							{% for z in study_participants %}
 								{% if z.id==y.user_id %}
-									<li> {{ y.user_id }} - {{ z.name }}</li>
+									<li> {{ z.slack_id }} - {{ z.name }}</li>
 								{% endif %}
 							{% endfor %}
 						{% endif %}
@@ -302,18 +486,24 @@
     <h1>Messages from users on slack</h1>
 	<table>
 		<tr>
+			<th>ID</th>
 			<th>Time</th>
 			<th>User ID</th>
-			<th>Survey ID</th>
-			<th>Queston ID</th>
+			<th>SL_ID
+			<th>S_ID</th>
+			<th>T_ID</th>
+			<th>Q_ID</th>
 			<th>Type</th>
 			<th>Text</th>
 		</tr>
 	{% for x in survey_question_log %}
 		<tr>
+			<td>{{ x.id }}</td>
 			<td>{{ x.timestamp }}</td>
 			<td>{{ x.user_id }}</td>
+			<td>{{ x.survey_log_id }}</td>
 			<td>{{ x.survey_id }}</td>
+			<td>{{ x.schedule_id }}</td>
 			<td>{{ x.question_id }}</td>
 			<td>{{ x.question_type }}</td>
 			<td>{{ x.text }}</td>

@@ -1,0 +1,127 @@
+<!doctype html>
+<head>
+	<title>Your Robota Daily Logs</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	    <!-- Latest compiled and minified CSS -->
+	    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css"> -->
+
+	    <!-- Optional theme -->
+	    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css"> -->
+
+	    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+	    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script> -->
+
+	    <!-- Latest compiled and minified JavaScript -->
+	    <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script> -->
+
+	    <link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/style.css') }}">
+	    <meta name="viewport" content="width=device-width, initial-scale=1">
+  		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+
+  	<script type="text/javascript">
+  		$( document ).ready(function() {
+	    	console.log( "ready!" );
+
+	    	$('[data-toggle="popover"]').popover(); 
+
+
+	    	/*$('body').popover({
+			    selector: '[data-toggle="popover"]'
+			});*/
+	  	});
+
+	  
+
+	  	$(window).click(function() {
+	  		/*if(!$(event.target).is('.circle'))
+			{
+			    console.log("Clicked somewhere outside!");
+			    var x = document.getElementsByClassName("selected");
+				for (var i = 0; i < x.length; i++) {
+				    x[i].classList.remove('selected');
+				}
+
+				//$('#report_monday').popover('hide')
+			}*/
+	  		
+			
+		});
+
+	  	function showReportPopup(param) {
+	    	//var elem = document.getElementById("report_monday");
+	    	param.classList.toggle('selected');
+	    	//$('#report_monday').popover('show')
+	    	console.log("Clicked on it!");
+
+	    	//alert("You clicked it!")
+	  	}
+
+
+  	</script>
+</head>
+<body>
+	<div class="center">
+		{% if participant_name is not none %}
+			<div>
+				<h1 style="text-align:center; margin-bottom:50px">Your Robota Daily Logs</h1>
+				<table id="visualization" style="width:100%; margin-left: auto; margin-right: auto; border: 0px solid white; table-layout: fixed">
+					<tr>
+						<td class="lead" style="padding-bottom: 20px; border: 0px">Monday</td>
+						<td class="lead" style="padding-bottom: 20px; border: 0px">Tuesday</td>
+						<td class="lead" style="padding-bottom: 20px; border: 0px">Wednesday</td>
+						<td class="lead" style="padding-bottom: 20px; border: 0px">Thursday</td>
+						<td class="lead" style="padding-bottom: 20px; border: 0px">Friday</td>
+					</tr>
+					<tr>
+						<!--<td class="lead" style="white-space: nowrap;"><h4>Week 1</h4></td>-->
+				{% for x in days %}
+					<td text-align="center" style="margin-right: 10px; border: 0px">
+						<div id="report_monday_{{ x.id }}" style="margin: auto;"
+						class="circle {% if x.is_data==1 %}filled {% else %}hollow {% endif %} {% if x.is_reflection==1 %}reflection {% else %}no_reflection {% endif %}" 
+						{% if x.is_data==1 %}data-toggle="popover" {% endif %}
+						title="{{ x.date.strftime('%A, %b %d, %Y') }}" 
+						data-html="true" 
+						data-content="
+						    	<div>
+						    	<ul>
+						    	<!-- questions -->
+						    	{% for y in questions %}
+						    		<!-- show only report question -->
+			    					{% if y.type == 'REPORT' %}
+							    		{% if y.day_of_year == x.day_of_year %}
+											
+											<li> <strong>{{ y.text }}</strong></li>
+											<ul class='list-unstyled'>
+											<!-- answers -->
+											{% for z in answers %}
+									    		{% if z.sl_id == y.sl_id and z.sql_id == y.sql_id %}
+													<li><mark> {{ z.text }} </mark></li>
+												{% endif %}
+											{% endfor %}
+											</ul>	
+
+										{% endif %}
+									{% endif %} <!-- end if.type == 'REPORT' -->
+								{% endfor %}	
+						    	</ul>
+						    </div>" 
+						data-placement="auto top" 
+						onclick="return showReportPopup(this);"
+						>
+						</div>
+					</td>
+				{% endfor %}
+					</tr>
+				</table>
+			</div>
+		{% else %}
+			<h1>You need to be logged in to access your personal dashboard!</h1>
+			
+		{% endif %}
+	</div>
+
+</body>
