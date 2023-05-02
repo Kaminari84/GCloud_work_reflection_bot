@@ -14,7 +14,7 @@ six==1.10.0
 slackclient==1.0.6
 urllib3==1.21.1
 websocket-client==0.44.0
-Werkzeug==0.12.2
+Werkzeug==2.2.3
 PyMySQL==0.7.11
 Flask-SQLAlchemy==2.2
 uuid==1.30
