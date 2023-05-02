@@ -1,6 +1,6 @@
-Flask==0.12.2
+Flask==2.3.2
 gunicorn==19.7.1
-certifi==2017.4.17
+certifi==2022.12.7
 chardet==3.0.4
 click==6.7
 idna==2.5
@@ -9,12 +9,12 @@ Jinja2==2.9.6
 MarkupSafe==1.0
 pyaml==16.9.0
 PyYAML==5.4
-requests==2.18.1
+requests==2.20.0
 six==1.10.0
 slackclient==1.0.6
-urllib3==1.21.1
+urllib3==1.26.5
 websocket-client==0.44.0
-Werkzeug==0.12.2
+Werkzeug==2.2.3
 PyMySQL==0.7.11
 Flask-SQLAlchemy==2.2
 uuid==1.30
